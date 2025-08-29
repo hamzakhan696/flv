@@ -1,0 +1,69 @@
+generator client { 
+  provider = "prisma-client-js" 
+  output   = "../node_modules/.prisma/client" 
+} 
+ 
+datasource db { 
+  provider = "postgresql" 
+  url      = env("DATABASE_URL") 
+} 
+ 
+model League { 
+  id            String @id @default(cuid()) 
+  host          String 
+  hostLeagueId  String 
+  season        Int 
+  name          String 
+  createdAt     DateTime @default(now()) 
+  updatedAt     DateTime @updatedAt 
+ 
+  teams         Team[] 
+  @@unique([host, hostLeagueId, season]) 
+} 
+ 
+model Team { 
+  id           String  @id @default(cuid()) 
+  leagueId     String 
+ 
+  league       League  @relation(fields: [leagueId], references: [id], onDelete: Cascade) 
+  hostTeamId   String 
+  displayName  String 
+  managerEmail String? 
+ 
+  scores       Score[] 
+  metrics      Metric[] 
+ 
+  @@unique([leagueId, hostTeamId]) 
+} 
+ 
+model Score { 
+  id             String  @id @default(cuid()) 
+  teamId         String 
+  team           Team    @relation(fields: [teamId], references: [id], onDelete: Cascade) 
+  week           Int 
+  hostPoints     Decimal @db.Numeric(10,2) @default(0) 
+  customPoints   Decimal @db.Numeric(10,2) @default(0) 
+  combinedPoints Decimal @db.Numeric(10,2) @default(0) 
+  lockStatus     String  @default("UNLOCKED") 
+  createdAt      DateTime @default(now()) 
+  updatedAt      DateTime @updatedAt 
+ 
+  @@unique([teamId, week]) 
+  @@index([week]) 
+} 
+ 
+model Metric { 
+  id           String  @id @default(cuid()) 
+  leagueId     String? 
+  teamId       String? 
+  team         Team?   @relation(fields: [teamId], references: [id], onDelete: SetNull) 
+  week         Int 
+  metricName   String 
+  metricPoints Decimal @db.Numeric(10,2) 
+  source       String 
+  createdAt    DateTime @default(now()) 
+  updatedAt    DateTime @updatedAt 
+
+  @@unique([teamId, week, metricName]) 
+  @@index([week, metricName]) 
+} 
